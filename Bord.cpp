@@ -4,8 +4,7 @@
 #include "Piece.h"
 #include <vector>
 #include <thread>
-#include<mutex>
-mutex m;
+
 
 #include <chrono>
 
@@ -63,7 +62,7 @@ bool Bord::sequentielle(int x, int y) {
 
     for (int i = 0; i < col * row; i++) {
         if (usedliste[i]== false) {
-            if(isposible(this->bord , x , y , i)){
+            if(verifbor( x , y , i)){
             bord[x][y] = listPieces[i];
            usedliste[i]= true;
              
@@ -127,26 +126,90 @@ bool Bord :: isbordcolor(int x, int y , int i) {
                  else return true;
    
 }
+bool Bord::verifbor(int x ,int y ,int i){
+    if(!usedliste[i]){
 
- 
+if(x==0){
+    if (y==0) {
+        return listPieces[i].left==listPieces[i].top;
+    }
+    else if(y<col-1) {
+        return (listPieces[i].left==bord[x][y-1].right && listPieces[i].top== bord[x][y-1].top);
+    }
+    else  {
+       return  (listPieces[i].left==bord[x][y-1].right && listPieces[i].top== bord[x][y-1].top && listPieces[i].right==listPieces[i].top);
+    }   
+} 
+
+else if(y==0){
+   
+
+          
+        
+    if(x<col-1) {
+
+    return (listPieces[i].left==bord[x-1][y].left && listPieces[i].top==bord[x-1][y].bot);
+   }
+   else {
+
+   return      (listPieces[i].left==bord[x-1][y].left && listPieces[i].top==bord[x-1][y].bot && listPieces[i].bot==listPieces[i].left);
+   }
+
+}
+else if(x==col-1)
+    {
+       
+    if(y==0) {  
+         return      (listPieces[i].left==bord[x-1][y].left && listPieces[i].top==bord[x-1][y].bot && listPieces[i].bot==listPieces[i].left);
+
+    }
+    else if(y<col-1){
+
+        return (listPieces[i].left==bord[x][y-1].right &&listPieces[i].top==bord[x-1][y].bot &&listPieces[i].bot==bord[x][y-1].bot);
+    }
+    else {
+
+        return (listPieces[i].left==bord[x][y-1].right &&listPieces[i].top==bord[x-1][y].bot &&listPieces[i].bot==bord[x][y-1].bot &&listPieces[i].right==listPieces[i].bot);
+    }
+
+    }
+else if(y==col-1){
+    if(x==0){
+      return   (listPieces[i].left==bord[x][y-1].right && listPieces[i].top==bord[x][y-1].top && listPieces[i].right==listPieces[i].top);
+    }
+    else if(x<col-1){
+
+        
+      return   (listPieces[i].left==bord[x][y-1].right && listPieces[i].top==bord[x-1][y].bot && listPieces[i].right==bord[x-1][y].right);
+    }
+    else {
+
+        
+      return   (listPieces[i].left==bord[x][y-1].right && listPieces[i].top==bord[x-1][y].bot && listPieces[i].right==bord[x-1][y].right && listPieces[i].bot==listPieces[i].right);
+    }
+}
+
+else return (listPieces[i].left ==bord[x][y-1].right && listPieces[i].top == bord[x-1][y].bot);
+    
+}
+return false ;
+
+}
 
 bool Bord::backtrackparelle(int x, int y) {
     if (y== col) {
-       
-    display(this->bord);
-      
+
+      // display(this->bord);
+   
         return true;
     }
     else{
     for (int i = 0; i < col *row; i++) {
-    
         if (usedliste[i]== false) {
-      
            if(isposible(this->bord , x , y , i)){
             bord[x][y] = listPieces[i];
            usedliste[i]= true;
-            
-            
+             
           
                    
             if (backtrackparelle(x, y+1)) {
@@ -162,18 +225,19 @@ bool Bord::backtrackparelle(int x, int y) {
 }
 
 void  Bord::startparralle() {
-
-    for (int x = 0; x < col; x++) {
-    thread t([&]{backtrackparelle(x, 0);});
+   for (int i = 0; i < col; i++) {
+    thread t([&]{backtrackparelle(i, 0);});
     t.join();
   
 }
+display(bord);
 }
-   
-
 
 
 int main(int c , char *argv[]) {
+
+
+
    char left , top , bot , right;
    int row , col;
    vector<bool>liste_state;
@@ -216,21 +280,39 @@ b.listPieces=liste_Piece;
 b.usedliste= liste_state;
 
  std::vector<std::thread> threads;
+/*for (int x = 0; x < col; x++) {
+    thread t([&]{b.backtrackparelle(x, 0);});
+    t.join();
+    b.display(b.bord); 
+}*/
+
+
+
+
+
+  int input; 
+
+
+cout<< "choisir le type d'algorithme "<< endl;
+cout<< "** 1 pour sequentielle "<<endl;
+cout<<"*** 2 pour le parallesime "<< endl;
+cin>>input;
+//cout<<
+ auto start = std::chrono::high_resolution_clock::now();
+
+if (input == 1) {
+start = std::chrono::high_resolution_clock::now();
+   cout<< b.sequentielle(0, 0)<< "le resultat de la sortie est "<< endl;
+} else {
+    start = std::chrono::high_resolution_clock::now();
+    b.startparralle();
+}
 
 
 
 
 
 
-   
-
-auto start = std::chrono::high_resolution_clock::now();
-
-
-//cout<<b.sequentielle(0, 0);
-
-
- b.startparralle();
 
 
 auto end = std::chrono::high_resolution_clock::now();
@@ -250,5 +332,3 @@ delete[] bord;
 
     return 0;
 }
-
-

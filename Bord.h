@@ -22,7 +22,9 @@ public:
     bool sequentielle(int x, int y);
     bool possible(int x , int y , int i);
     bool  isbordcolor(int x, int y , int i);
-    bool backtrackparelle(int x ,  int y );
+    bool verifbor(int x, int y, int i);
+   
+    bool backtrackparelle(int x, int y);
     void startparralle();
     void threadPool();
     void display(Piece **bord);
