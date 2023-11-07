@@ -4,12 +4,13 @@
 #include "Piece.h"
 #include <vector>
 #include <thread>
-
+#include <atomic>
 
 #include <chrono>
 
 using namespace std;
-char bordcolor; 
+char bordcolor; atomic <bool> trouve(false);
+
 Bord::Bord(Piece** bord, int col ,int row) {
     this->bord= bord;
     this->col= col;
@@ -42,14 +43,19 @@ bool Bord::isposible(Piece** bord, int x, int y, int position) {
 
    
 
-bool Bord::sequentielle(int x, int y) {
+bool Bord::sequentielle(int x, int y, Bord b) {
+        
+        
+        
+    if(trouve ) return true;
     
     if(y==col){
        x +=1;
         y=0;
     }
     if(x==col){
-        display(bord);
+        trouve = true;
+        display(b.bord);
         return true ;
     
                    }
@@ -61,17 +67,18 @@ bool Bord::sequentielle(int x, int y) {
 
 
     for (int i = 0; i < col * row; i++) {
-        if (usedliste[i]== false) {
+        if (b.usedliste[i]== false) {
             if(verifbor( x , y , i)){
-            bord[x][y] = listPieces[i];
-           usedliste[i]= true;
+           b. bord[x][y] = b.listPieces[i];
+           
+          b. usedliste[i]= true;
              
           
-            if (sequentielle(x, y+1)) {
+            if (sequentielle(x, y+1, b)) {
                 return true;
             }
 
-            usedliste[i] = false;
+          b. usedliste[i] = false;
         }
     }}
     
@@ -198,15 +205,17 @@ return false ;
 
 bool Bord::backtrackparelle(int x, int y) {
     if (y== col) {
-
-      // display(this->bord);
-   
+             cout<<"thread  done "<<x <<endl;
+      display(bord);
+       
         return true;
     }
     else{
     for (int i = 0; i < col *row; i++) {
         if (usedliste[i]== false) {
-           if(isposible(this->bord , x , y , i)){
+          // if(isposible(bord , x , y , i)){
+
+            if(verifbor( x , y , i)){
             bord[x][y] = listPieces[i];
            usedliste[i]= true;
              
@@ -219,116 +228,112 @@ bool Bord::backtrackparelle(int x, int y) {
            usedliste[i]= false;
         }
     }}
-    
+    cout<< "thread fail"<< x <<endl;
     return false;
     }
 }
 
 void  Bord::startparralle() {
-   for (int i = 0; i < col; i++) {
+   for (int i = 0; i <= col; i++) {
     thread t([&]{backtrackparelle(i, 0);});
     t.join();
   
 }
-display(bord);
+//display(bord);
 }
+void Bord:: creatBortool(char * filname){
+
+
+   char left , top , bot , right;
+   int row , col;
+  
+   ifstream file(filname);
+   if(file){
+    file>>row>>col;
+  this->row=row;
+  this->col=col;
+     for(int i=0; i<col*row ; i++){
+
+    file>>left>>top>>right>>bot ;
+    
+    Piece P (left, top, right , bot );
+    listPieces.push_back(P);
+    usedliste.push_back(false);
+                                }
+
+            }        
+
+     file.close();
+cout <<row;
+
+Piece** bord = new Piece*[row];
+for (int i = 0; i < row; i++) {
+    bord[i] = new Piece[col];
+}
+this->bord=bord;
+}
+
+
+vector<Piece>  Bord:: getvector(vector<Piece> t, int i ){
+vector<Piece >k ;   int n = col* row;
+
+
+k= t;
+k[i]=t[n-i];
+k[n-i]=t[i];
+
+
+
+return k ;
+
+
+}
+void Bord::Backtrakparralllepool() {
+    vector<thread> threadvector;
+
+    for (int i = 0; i < col * row; i++) {
+        Bord b;
+        b.bord = bord;
+        b.listPieces = getvector(listPieces, i);
+        b.usedliste = usedliste;
+        
+        
+        thread t([&,b]() {
+            sequentielle(0, 0, b);
+        });
+
+        
+       threadvector.push_back(move(t));
+    }
+
+    for (auto &t : threadvector) {
+        t.join();
+    }
+}
+
+
+
 
 
 int main(int c , char *argv[]) {
 
 
 
-   char left , top , bot , right;
-   int row , col;
-   vector<bool>liste_state;
-   vector< Piece>liste_Piece;
-   ifstream file(argv[1]);
-   if(file){
-    file>>row;
-    file>>col;
-     for(int i=0; i<col*row ; i++){
-
-    file>>left;
-    file>>top;
-    file>>right;
-    file>>bot ;
-    Piece P (left, top, right , bot );
-    liste_Piece.push_back(P);
-    liste_state.push_back(false);
-                                }
-
-            }        
-
-     file.close();
-
-cout<< row << endl;
-
-
-Piece** bord = new Piece*[row];
-for (int i = 0; i < row; i++) {
-    bord[i] = new Piece[col];
-}
-
-
-
-
-
-
-
-Bord b(bord,row, col );
-b.listPieces=liste_Piece;
-b.usedliste= liste_state;
+Bord b;
+b.creatBortool(argv[1]);
+//b.sequentielle(0,0);
+//b.startparralle();
+b.Backtrakparralllepool();
 
  std::vector<std::thread> threads;
-/*for (int x = 0; x < col; x++) {
-    thread t([&]{b.backtrackparelle(x, 0);});
-    t.join();
-    b.display(b.bord); 
-}*/
 
+   
 
-
-
-
-  int input; 
-
-
-cout<< "choisir le type d'algorithme "<< endl;
-cout<< "** 1 pour sequentielle "<<endl;
-cout<<"*** 2 pour le parallesime "<< endl;
-cin>>input;
-//cout<<
- auto start = std::chrono::high_resolution_clock::now();
-
-if (input == 1) {
-start = std::chrono::high_resolution_clock::now();
-   cout<< b.sequentielle(0, 0)<< "le resultat de la sortie est "<< endl;
-} else {
-    start = std::chrono::high_resolution_clock::now();
-    b.startparralle();
+//destructeur de bord 
+for (int i = 0; i < b.row; i++) {
+    delete[]b. bord[i];
 }
-
-
-
-
-
-
-
-
-auto end = std::chrono::high_resolution_clock::now();
-auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-
-int minutes = duration.count() / 60;
-int seconds = duration.count() % 60;
-
-std::cout << "Temps d'exécution : " << minutes << " minutes et " << seconds << " secondes" << std::endl;
-
-
-//cldestructeur de bord 
-for (int i = 0; i < row; i++) {
-    delete[] bord[i];
-}
-delete[] bord;
+delete[] b.bord;
 
     return 0;
 }
