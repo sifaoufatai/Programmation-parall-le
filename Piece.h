@@ -15,6 +15,6 @@ class Piece{
             
             Piece(char left, char top, char right , char bot ) ;
     
-
+            Piece& operator=(const Piece& other);
 };
 #endif

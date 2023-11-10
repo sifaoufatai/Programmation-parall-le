@@ -3,7 +3,7 @@
 
 
     
-        Piece::Piece() :  left(0),  top(0),  right(0) , bot (0) {}
+        Piece::Piece() :  left('Q'),  top('R'),  right('S') , bot ('T') {}
     
 
             
@@ -12,4 +12,12 @@
         
             
          }
-    
+  Piece& Piece::operator=(const Piece& other) {
+    if (this != &other) {  
+        this->left = other.left;
+        this->top = other.top;
+        this->right = other.right;
+        this->bot = other.bot;
+    }
+    return *this;
+}

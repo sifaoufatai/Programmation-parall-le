@@ -16,8 +16,10 @@ public:
     
 
    Bord(){};
+  // Bord(const Bord& other);
        
-    Bord( Piece** bord , int col, int row  );
+    //Bord( Piece** bord , int col, int row  );
+    Bord(Piece **bord, int col, int row, vector<Piece> listPieces, vector<bool> usedliste);
     bool isposible(Piece **bord, int x, int y, int position);
     bool sequentielle(int x, int y,Bord b);
     bool possible(int x , int y , int i);
@@ -28,10 +30,14 @@ public:
     void startparralle();
     void creatBortool(char *filname);
     void threadPool();
+    bool checkifbordvalide(Piece **bord);
     void display(Piece **bord);
     vector<Piece> getvector(vector<Piece> v, int i );
 
     void Backtrakparralllepool();
+
+    Piece **putfirstPiece(Bord b, int i);
+
 
     // bool sequentielle(){}
 };
