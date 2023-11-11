@@ -16,21 +16,21 @@ char bordcolor;
 atomic<bool> trouve(false);
 atomic<int> nbthread;
 
-
 vector<int> task;
-int T = 36;
+atomic<bool> afficher(false);
+int T = 2;
 mutex m;
 
-Bord::Bord(Piece **bord, int col, int row, vector<Piece>listPieces,vector<bool> usedliste )
+Bord::Bord(vector<vector<Piece>> bord, int col, int row, vector<Piece> listPieces, vector<bool> usedliste)
 {
     this->bord = bord;
     this->col = col;
     this->row = row;
-    this->listPieces=listPieces;
-    this->usedliste=usedliste;
+    this->listPieces = listPieces;
+    this->usedliste = usedliste;
 }
 
-bool Bord::isposible(Piece **bord, int x, int y, int position)
+bool Bord::isposible(vector<vector<Piece>> bord, int x, int y, int position)
 {
     if (usedliste[position] == false)
     {
@@ -51,28 +51,31 @@ bool Bord::isposible(Piece **bord, int x, int y, int position)
     return false;
 }
 
-bool Bord::sequentielle(int x, int y, Bord b)
+bool Bord::sequentielle(int x, int y, Bord &b)
 {
 
-    //display(b.bord);
-    std::cout << "____________________________________________" << endl;
-
     // if(b.bord[0][0].left !=  b.bord[0][0].top){cout<< "pas besoins de me traiter aucun n'interet "<< endl; nbthread--;return false ;}
-    // if(checkifbordvalide(b.bord) && x==col){
-    //   display(b.bord); return true;
-    //}
-    if(trouve) return true;
     
+    
+    if (trouve)
+        return true;
+
     if (y == col)
-                    {
-                        x += 1;
-                        y = 0;
-                    }
+    {
+        x += 1;
+        y = 0;
+    }
     if (x == col)
     {
-         trouve = true;
-         m.lock();
-        display(b.bord);
+        m.lock();
+        std::cout << "__________________  *Bingo *________________________" << endl;
+        trouve = true;
+
+        if (!afficher)
+        {
+            afficher = true;
+            display(b.bord);
+        }
         m.unlock();
         return true;
     }
@@ -83,14 +86,12 @@ bool Bord::sequentielle(int x, int y, Bord b)
         {
             if (b.usedliste[i] == false)
             {
-               // if (isposible(b.bord, x, y, i))
-               if(verifbor(x, y, i))
+                // if (isposible(b.bord, x, y, i))
+                if (verifbor(x, y, i))
                 {
                     b.bord[x][y] = b.listPieces[i];
 
                     b.usedliste[i] = true;
-
-                    
 
                     if (sequentielle(x, y + 1, b))
                     {
@@ -98,17 +99,17 @@ bool Bord::sequentielle(int x, int y, Bord b)
                     }
 
                     b.usedliste[i] = false;
-                    //b.bord[x][y] = Piece();
+                    // b.bord[x][y] = Piece();
                 }
             }
         }
-        nbthread--;
+        
 
         return false;
     }
 }
 
-void Bord::display(Piece **bords)
+void Bord::display(vector<vector<Piece>> bords)
 {
     for (int i = 0; i < row; i++)
     {
@@ -269,8 +270,6 @@ bool Bord::backtrackparelle(int x, int y)
                     }
 
                     usedliste[i] = false;
-
-
                 }
             }
         }
@@ -313,275 +312,195 @@ void Bord::creatBortool(char *filname)
     }
 
     file.close();
+    vector<vector<Piece>> bord;
+    bord = vector<vector<Piece>>(row, vector<Piece>(col));
+    ;
 
-    Piece **bord = new Piece *[row];
-    for (int i = 0; i < row; i++)
-    {
-        bord[i] = new Piece[col];
-    }
     for (int i = 0; i < col; i++)
     {
 
         for (int j = 0; j < col; j++)
         {
-            bord[i][j] = Piece(
-
-            );
+            bord[i][j] = Piece();
         }
     }
 
     this->bord = bord;
 }
 
-vector<Piece> Bord::getvector(vector<Piece> t, int i)
+vector<Piece> Bord::getvector(vector<Piece> t)
 {
     vector<Piece> k;
     k = t;
-    auto rng = std::default_random_engine{};
-    std::shuffle(begin(k), end(k), rng);
+    // generateur de nombres aléatoires
+    std::random_device rd;
+    // Mersenne Twister Engine pour la randomisation
+    std::mt19937 rng(rd());
 
+    std::shuffle(t.begin(), t.end(), rng);
     return k;
 }
-void Bord::Backtrakparralllepool() {
-    vector<thread> threadvector;
+void Bord::Backtrakparralllepool()
+{   
+    int r= col*row;
+    vector<thread> threadvector(r);
 
-    for (int i = 0; i < col * row; i++) {
-        auto action = [i, this]() {
-            vector<Piece> mylistepieces = getvector(listPieces, i);
+    for (int i = 0; i < col * row; i++)
+    {
+        auto action = [this,i]()
+        {
+            vector<Piece> mylistepieces = getvector(listPieces);
+            vector<vector<Piece>> bord;
 
-          
-            Piece** bord = new Piece*[row];
-            for (int j = 0; j < row; j++) {
-                bord[j] = new Piece[col];
-            }
+            bord = vector<vector<Piece>>(row, vector<Piece>(col));
 
             Bord b(bord, col, row, mylistepieces, usedliste);
 
-            
-            b.sequentielle(0, 0, b);
-
-            
-            for (int j = 0; j < row; j++) {
-                delete[] bord[j];
-            }
-            delete[] bord;
+           b. sequentielle(0, 0, b);
         };
 
-        threadvector.emplace_back(action);
+        threadvector[i]=thread(action);
     }
 
-    for (int i = 0; i < col * row; i++) {
+    for (int i = 0; i < col * row; i++)
+    {
         threadvector[i].join();
     }
 }
 
-
-Piece **Bord::putfirstPiece(Bord b, int i)
+vector<vector<Piece>>Bord::putfirstPiece(Bord &b, int i)
 {
 
     b.bord[0][0] = b.listPieces[i];
     b.usedliste[i] = true;
     return b.bord;
 }
+void Bord:: lunchtask(Bord &b ){
+    nbthread++;
+    b.sequentielle(0,1, b);
+    nbthread--;
+
+}
 void Bord ::threadPool()
 {
 
     int n = row * col;
 
-    for (int i = 0; i < 36; i++)
+    for (int i = 0; i < n; i++)
+
     {
-        task.push_back(i);
-    }
-
-    for (int i = 0; i < task.size(); i++)
-    {
-    }
-
-    for (int k = 0; k < T; k++)
-    {
-        Bord b;
-        b.bord = bord;
-        b.listPieces = listPieces;
-        b.usedliste = usedliste;
-        int current_task = -1;
-        m.lock();
-
-        if (!task.empty() && !trouve)
-        {
-
-            current_task = task.back();
-            cout << current_task << endl;
-            task.pop_back();
-
-            m.unlock();
-        }
-
-        if (current_task != -1)
-        {
-
-            b.bord = putfirstPiece(b, current_task);
-            b.usedliste[current_task] = true;
-            nbthread++;
-            thread t([&, b]()
-                     { sequentielle(0, 1, b); });
-            t.detach();
-            cout << "le nombre de thread  = " << nbthread << endl;
-        }
-    }
-
-    while (1)
-    {
-        int next_task = -1;
-        if (trouve)
-            return;
-        m.lock();
-
-        if (!task.empty())
-        {
-
-            if (!task.empty() && nbthread < T && !trouve)
+            if(listPieces[i].top ==listPieces[i].left)
             {
-
-                next_task = task.back();
-                task.pop_back();
-                nbthread += 1;
+            task.push_back(i);
             }
-            m.unlock();
+    }
+     int M = task.size();
+        T= M-2;
+    vector<thread> threadvector;
 
-            if (next_task != -1)
-            {
-                Bord b;
-                b.bord = bord;
-                b.listPieces = listPieces;
-                b.usedliste = usedliste;
-                cout << next_task << " ici c'est pour le second" << endl;
+    for (int i = 0; i < T; i++)
 
-                b.bord = putfirstPiece(b, next_task);
-                b.usedliste[next_task] = true;
-
-                thread h([&, b]()
-                         { sequentielle(0, 1, b); });
-                h.detach();
-            }
-        }
-        m.lock();
-        if (task.empty() || trouve)
+    {   int k =task.back();
+        task.pop_back();
+        auto action = [this,k]()
         {
-            cout << "Voici " << nbthread << " je suis le nombre de thread " << endl;
-            m.unlock();
+            vector<Piece> mylistepieces = getvector(listPieces);
+            vector<vector<Piece>> bord;
 
-            break;
+            bord = vector<vector<Piece>>(row, vector<Piece>(col));
+
+            Bord b(bord, col, row, mylistepieces, usedliste);
+            b.putfirstPiece(b, k);
+
+           b.lunchtask(b);
+        };
+
+         threadvector.push_back(thread(action));
+    }
+
+    while(!trouve && !task.empty() && nbthread< T)
+
+    {   
+            int current_task =-1;
+            current_task =task.back();
+             task.pop_back();
+        
+        
+             auto f = [this,current_task]()
+        {
+            vector<Piece> mylistepieces = getvector(listPieces);
+            vector<vector<Piece>> bord;
+
+            bord = vector<vector<Piece>>(row, vector<Piece>(col));
+
+            Bord b(bord, col, row, mylistepieces, usedliste);
+            b.putfirstPiece(b, current_task);
+
+           b.lunchtask(b);
+        };
+
+        threadvector.push_back(thread(f));
+
+        if(trouve || task.empty())
+        {
+           break;
         }
     }
+
+    for (auto & t: threadvector)  t.join();
+    
 }
 
-bool Bord::checkifbordvalide(Piece **bord)
-{
-    ;
 
-    // Vérifier les conditions pour la validité du plateau
-
-    for (int i = 0; i < row; i++)
-    {
-        for (int j = 0; j < col; j++)
-        {
-            cout << "ggggggg" << endl;
-            if (i == 0 && j == 0)
-            {
-
-                if (bord[i][j].left != bord[i][j].top)
-                {
-                    return false;
-                }
-            }
-            else if (i == 0 && j == col - 1)
-            {
-                // Coin supérieur droit
-                if (bord[i][j].left != bord[i][j - 1].right || bord[i][j].top != bord[i][j].right)
-                {
-                    return false;
-                }
-            }
-            else if (i == row - 1 && j == 0)
-            {
-                // Coin inférieur gauche
-                if (bord[i][j].left != bord[i - 1][j].bot || bord[i][j].top != bord[i][j].bot)
-                {
-                    return false;
-                }
-            }
-            else if (i == row - 1 && j == col - 1)
-            {
-                // Coin inférieur droit
-                if (bord[i][j].left != bord[i - 1][j].bot || bord[i][j].top != bord[i][j - 1].right)
-                {
-                    return false;
-                }
-            }
-            else if (i == 0)
-            {
-                // Bordure supérieure
-                if (bord[i][j].left != bord[i][j - 1].right || bord[i][j].top != bord[i][j].right)
-                {
-                    return false;
-                }
-            }
-            else if (j == 0)
-            {
-                // Bordure gauche
-                if (bord[i][j].left != bord[i - 1][j].bot || bord[i][j].top != bord[i][j].bot)
-                {
-                    return false;
-                }
-            }
-            else if (i == row - 1)
-            {
-                // Bordure inférieure
-                if (bord[i][j].left != bord[i - 1][j].bot || bord[i][j].top != bord[i][j - 1].right)
-                {
-                    return false;
-                }
-            }
-            else if (j == col - 1)
-            {
-                // Bordure droite
-                if (bord[i][j].left != bord[i][j - 1].right || bord[i][j].top != bord[i - 1][j].bot)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                // Au milieu du plateau
-                if (bord[i][j].left != bord[i][j - 1].right || bord[i][j].top != bord[i - 1][j].bot ||
-                    bord[i][j].right != bord[i][j].top || bord[i][j].bot != bord[i][j].left)
-                {
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
-}
 
 int main(int c, char *argv[])
 {
 
     Bord mybord;
     mybord.creatBortool(argv[1]);
-   // mybord.sequentielle(0, 0, mybord);
+   // mybord.putfirstPiece(mybord, 0);
+    
+    // cout<< mybord.sequentielle(0, 0, mybord)<<endl;;
     // b.startparralle();
-     mybord.Backtrakparralllepool();
+    //  mybord.Backtrakparralllepool();
     // mybord.display(mybord.bord);
-    // mybord.threadPool();
-    std::vector<std::thread> threads;
+   // mybord.threadPool();
+  
+    int input;
+    cout << "choisir le type d'algorithme " << endl;
+    cout << "** 1 pour sequentielle " << endl;
+    cout << "*** 2 pour le parallesime simple" << endl;
+    cout << "*** 3 pour le threadpool" << endl;
+    cin >> input;
 
-    // destructeur de bord
-    for (int i = 0; i < mybord.row; i++)
-    {
-        delete[] mybord.bord[i];
-    }
-    delete[] mybord.bord;
 
-    return 0;
+   auto start = std::chrono::high_resolution_clock::now();
+
+if (input == 1)
+{
+    start = std::chrono::high_resolution_clock::now();
+    mybord.sequentielle(0, 0, mybord);
+}
+else if (input == 2)
+{
+    start = std::chrono::high_resolution_clock::now();
+    mybord.Backtrakparralllepool();
+}
+else 
+{
+        
+    start = std::chrono::high_resolution_clock::now();
+    mybord.threadPool();
+}
+
+auto end = std::chrono::high_resolution_clock::now();
+auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+int milliseconds = duration.count();
+int seconds = milliseconds / 1000;
+milliseconds = milliseconds % 1000;
+
+std::cout << "Temps d'exécution : " << seconds << " secondes et " << milliseconds << " millisecondes" << std::endl;
+
+return 0;
 }

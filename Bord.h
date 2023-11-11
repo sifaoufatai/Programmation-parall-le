@@ -12,16 +12,17 @@ public:
     int row , col;
     vector <Piece> listPieces;
     vector< bool>usedliste ;
-    Piece  **bord;
+    vector<vector<Piece>> bord;
+;
     
 
    Bord(){};
   // Bord(const Bord& other);
        
     //Bord( Piece** bord , int col, int row  );
-    Bord(Piece **bord, int col, int row, vector<Piece> listPieces, vector<bool> usedliste);
-    bool isposible(Piece **bord, int x, int y, int position);
-    bool sequentielle(int x, int y,Bord b);
+    Bord(vector<vector<Piece>> bord, int col, int row, vector<Piece> listPieces, vector<bool> usedliste);
+    bool isposible(vector<vector<Piece>> bord, int x, int y, int position);
+    bool sequentielle(int x, int y,Bord &b);
     bool possible(int x , int y , int i);
     bool  isbordcolor(int x, int y , int i);
     bool verifbor(int x, int y, int i);
@@ -30,14 +31,15 @@ public:
     void startparralle();
     void creatBortool(char *filname);
     void threadPool();
-    bool checkifbordvalide(Piece **bord);
-    void display(Piece **bord);
-    vector<Piece> getvector(vector<Piece> v, int i );
+    bool checkifbordvalide(vector<vector<Piece>> bord);
+    void display(vector<vector<Piece>> bord);
+    vector<Piece> getvector(vector<Piece> v);
 
     void Backtrakparralllepool();
 
-    Piece **putfirstPiece(Bord b, int i);
+    vector<vector<Piece>> putfirstPiece(Bord &b, int i);
 
+    void lunchtask(Bord &b);
 
     // bool sequentielle(){}
 };
